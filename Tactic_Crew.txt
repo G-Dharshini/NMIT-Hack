@@ -1,0 +1,76 @@
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h>
+#include <ThingSpeak.h>
+
+#define LED_PIN D0
+#define GAS_SENSOR_PIN A0
+const char *ssid = "Placement & Training";
+const char *password = "placement@4321";
+int gas_value;
+const char* host = "maker.ifttt.com";
+
+void setup() 
+{
+    Serial.begin(115200);
+    Serial.println("Email from Node Mcu");
+    delay(100);
+    delay(1000);
+
+   connectWiFi(); 
+
+}
+
+void loop() 
+{                
+   while((!(WiFi.status() == WL_CONNECTED)))
+    {
+      connectWiFi();
+    }    
+      WiFiClient client; 
+      const int httpPort = 80;  
+      if (!client.connect(host, httpPort)) 
+      {  
+         Serial.println("connection failed");  
+         return;
+      } 
+      gas_value = analogRead(GAS_SENSOR_PIN);
+        Serial.print("Concentration value : ");
+        Serial.println(gas_value);               
+         if (gas_value > 230)
+         {   
+          String url = "/trigger/NMIT/with/key/lXvjdGbkXeS0XeT9MvE0P5QvknrorW8eziSXzMKBgls"; 
+          Serial.println("WARNING!");
+          Serial.print("Requesting URL: ");
+          Serial.println(url);                 
+          client.print(String("GET ") + url + " HTTP/1.1\r\n" + "Host: " + host + "\r\n" + "Connection: close\r\n\r\n");  
+          digitalWrite(GAS_SENSOR_PIN,HIGH); 
+         }                     
+          else
+          { 
+            digitalWrite(GAS_SENSOR_PIN,LOW);          
+          }
+       delay(2000);    
+}
+
+void connectWiFi()
+{ 
+  WiFi.disconnect(); 
+  delay(10);
+  WiFi.begin(ssid, password);
+
+  Serial.println();
+  Serial.println();
+  Serial.print("connection to ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+    Serial.println("");
+    Serial.print("Nodemcu has been connected to wifi ");
+    Serial.println(ssid);
+}
